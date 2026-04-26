@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RF Power Converter</title>
+    <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJpZGVudGlmaWVyIjogInJmLWNvbnZlcnRlciIsCiAgIm5hbWUiOiAiUkYgUG93ZXIgQ29udmVydGVyIiwKICAic2hvcnRfbmFtZSI6ICJSRiBDb252IiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmZmZmYiLAogICJ0aGVtZV9jb2xvciI6ICIjMjU2M2ViIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9jZG4taWNvbnMtcG5nLmZsaXRpY29uLmNvbS81MTIvMzEwNC8zMTA0NDc5LnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgICJ0eXBlIjogImltYWdlL3BuZyIsCiAgICAgICJwdXJwb3NlIjogImFueSBtYXNrYWJsZSIKICAgIH0KICBdCn0=">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        body { -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-xl font-bold text-slate-800">RF Converter</h1>
+            <span class="bg-blue-100 text-blue-600 text-[10px] px-2 py-1 rounded-full font-bold tracking-widest uppercase">PRO</span>
+        </div>
+        
+        <div class="flex bg-slate-100 rounded-xl p-1 mb-6 border border-slate-200">
+            <button id="modeDbmToPower" class="flex-1 py-2 text-sm font-semibold rounded-lg bg-white shadow-sm text-blue-600 transition-all" onclick="setMode('dbmToPower')">
+                dBm → mW/W
+            </button>
+            <button id="modePowerToDbm" class="flex-1 py-2 text-sm font-semibold rounded-lg text-slate-500 transition-all" onclick="setMode('powerToDbm')">
+                Power → dBm
+            </button>
+        </div>
+
+        <div class="space-y-5">
+            <div>
+                <label id="inputLabel" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Power Level (dBm)</label>
+                <div class="relative">
+                    <input type="number" id="inputValue" step="any" placeholder="0.00" 
+                        class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:outline-none text-2xl font-mono transition-all">
+                    <span id="inputUnitLabel" class="absolute right-4 top-4 text-slate-300 font-bold text-xl">dBm</span>
+                </div>
+            </div>
+
+            <div id="unitToggleContainer" class="hidden animate-fade-in">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Unit</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="unitMW" onclick="setPowerUnit('mW')" class="py-2 rounded-lg bg-blue-600 text-white text-sm font-bold">mW</button>
+                    <button id="unitW" onclick="setPowerUnit('W')" class="py-2 rounded-lg bg-slate-100 text-slate-600 text-sm font-bold">Watts</button>
+                </div>
+            </div>
+
+            <button onclick="calculate()" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-2xl transition-all shadow-lg active:scale-95 text-lg">
+                Calculate
+            </button>
+
+            <div id="resultBox" class="mt-4 p-5 bg-blue-600 rounded-2xl shadow-inner hidden">
+                <div id="resultsContent" class="space-y-3 text-white">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'dbmToPower';
+        let selectedPowerUnit = 'mW';
+
+        function setMode(mode) {
+            currentMode = mode;
+            const btnDbmToPower = document.getElementById('modeDbmToPower');
+            const btnPowerToDbm = document.getElementById('modePowerToDbm');
+            const unitToggle = document.getElementById('unitToggleContainer');
+            const inputLabel = document.getElementById('inputLabel');
+            const inputUnitLabel = document.getElementById('inputUnitLabel');
+            
+            if (mode === 'dbmToPower') {
+                btnDbmToPower.className = "flex-1 py-2 text-sm font-semibold rounded-lg bg-white shadow-sm text-blue-600 transition-all";
+                btnPowerToDbm.className = "flex-1 py-2 text-sm font-semibold rounded-lg text-slate-500 transition-all";
+                unitToggle.classList.add('hidden');
+                inputLabel.innerText = "Power Level (dBm)";
+                inputUnitLabel.innerText = "dBm";
+            } else {
+                btnPowerToDbm.className = "flex-1 py-2 text-sm font-semibold rounded-lg bg-white shadow-sm text-blue-600 transition-all";
+                btnDbmToPower.className = "flex-1 py-2 text-sm font-semibold rounded-lg text-slate-500 transition-all";
+                unitToggle.classList.remove('hidden');
+                inputLabel.innerText = "Absolute Power";
+                inputUnitLabel.innerText = "";
+            }
+            document.getElementById('resultBox').classList.add('hidden');
+        }
+
+        function setPowerUnit(unit) {
+            selectedPowerUnit = unit;
+            document.getElementById('unitMW').className = unit === 'mW' ? "py-2 rounded-lg bg-blue-600 text-white text-sm font-bold" : "py-2 rounded-lg bg-slate-100 text-slate-600 text-sm font-bold";
+            document.getElementById('unitW').className = unit === 'W' ? "py-2 rounded-lg bg-blue-600 text-white text-sm font-bold" : "py-2 rounded-lg bg-slate-100 text-slate-600 text-sm font-bold";
+        }
+
+        function calculate() {
+            const val = parseFloat(document.getElementById('inputValue').value);
+            const resultBox = document.getElementById('resultBox');
+            const resultsContent = document.getElementById('resultsContent');
+            if (isNaN(val)) return;
+
+            if (currentMode === 'dbmToPower') {
+                const mw = Math.pow(10, val / 10);
+                const w = mw / 1000;
+                resultsContent.innerHTML = `
+                    <div class="flex justify-between items-center border-b border-blue-400 pb-2"><span>Milliwatts</span><span class="text-xl font-mono font-bold">${mw.toFixed(2)} mW</span></div>
+                    <div class="flex justify-between items-center"><span>Watts</span><span class="text-xl font-mono font-bold">${w.toFixed(4)} W</span></div>
+                `;
+            } else {
+                let mwValue = (selectedPowerUnit === 'W') ? val * 1000 : val;
+                if (mwValue <= 0) {
+                    resultsContent.innerHTML = `<p class="text-white font-bold">Invalid Input (Power > 0 required)</p>`;
+                } else {
+                    const dbm = 10 * Math.log10(mwValue);
+                    resultsContent.innerHTML = `
+                        <div class="text-center py-2"><span class="block text-xs opacity-75 uppercase">Calculated dBm</span><span class="text-3xl font-mono font-bold">${dbm.toFixed(2)} dBm</span></div>
+                    `;
+                }
+            }
+            resultBox.classList.remove('hidden');
+        }
+
+        // Service Worker for Offline Use
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                const CACHE_NAME = 'rf-conv-v1';
+                self.addEventListener('install', e => {
+                    e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['./'])));
+                });
+                self.addEventListener('fetch', e => {
+                    e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
+                });
+            `;
+            const blob = new Blob([swCode], {type: 'application/javascript'});
+            navigator.serviceWorker.register(URL.createObjectURL(blob));
+        }
+    </script>
+</body>
+</html>
